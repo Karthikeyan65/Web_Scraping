@@ -51,7 +51,7 @@ def extract_data(
     with sync_playwright() as p:
 
         chromium = p.chromium
-        browser = chromium.launch(headless=True, args=["--disable-gpu", "--single-process"])
+        browser = chromium.launch(headless=False, args=["--disable-gpu", "--single-process"])
         context = browser.new_context()
         page = context.new_page()
 
@@ -78,24 +78,58 @@ def extract_data(
         loginbttn = page.locator('button[id="btLogin"]')
         loginbttn.click()
 
-        # with recaptchav2.SyncSolver(page) as solver:
-        #     token = solver.solve_recaptcha(wait=True)
+        with recaptchav2.SyncSolver(page) as solver:
+            token = solver.solve_recaptcha(wait=True)
 
         wait_for_all_xhr(page)
 
         print("Login Completed.")
 
-        page.goto(f"{BASE_URL}/group/ovir/consumo", timeout=120000)
 
-        contract_divs = page.locator('div[class="btn-filter-wrapper"]')
+        # Associate new contract
+
+        page.goto(f"{BASE_URL}/group/ovir/consumo", timeout=60000)
+
+        dropdown = page.locator('button[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_dropdownHeaderContract"]')
+        dropdown.wait_for(state='visible', timeout=60000)
+        dropdown.click()
+
+        page.wait_for_selector('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', timeout=60000)
+        page.fill('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', "405574275")
+
+        page.press('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', 'Enter')
+
+        # label = page.locator('div[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_listadoContratosGA"]').nth(0)  
+        # # label.wait_for(state='visible', timeout=60000)
+        # print("find it...")
+        # label.click()
+        
+        # Wait for the label element with specific 'for' attribute
+        page.wait_for_selector('label[for="contract-1"]', timeout=60000)
+
+        # Click the label using 'for' attribute
+        label = page.locator('label[for="contract-1"]').first
+        print(label)
+        label.click()
+
+        button = page.locator('button[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_selectContractCabecera"]')
+        # button.wait_for(state='visible', timeout=60000)
+        button.click()
+        print("Value entered successfully...")
+
+        page.goto("https://oficinavirtual.canaldeisabelsegunda.es/group/ovir/consumo",timeout=120000)
+        contract_divs = page.locator('div[class="resume-content datos"]')
         point = ""
         count = contract_divs.count()
+        print("count::",count)
         for i in range(count):
             text = contract_divs.nth(i).text_content()
+            print("text::",text)
             if "Contador" in text:
+                print("from if condition")
                 point = re.sub(r"Contador|\s+", "", text)        
         print(point)
-        print("class is loading...")
+        print("class is loading.......")
 
 
         wait_for_all_xhr(page)
@@ -112,7 +146,7 @@ def extract_data(
         global raw_html_container
         raw_html_container = []
 
-        page.route("**", lambda route, request: handle_route(route, request))
+        # page.route("**", lambda route, request: handle_route(route, request))
 
         filter_data_button.click()
         while True:
@@ -141,20 +175,20 @@ def extract_data(
             return {"content": [], "point": point}
 
 
-def handle_route(route: Route, request: Request) -> None:
-    if "/group/ovir/consumo?p_p_id" in request.url and request.method == "POST" and request.post_data:
-        global raw_html_container
-        url = request.url
-        headers = {key: value for key, value in request.headers.items()}
-        cookies = headers.get("Cookie", "")
-        form_data = request.post_data
+# def handle_route(route: Route, request: Request) -> None:
+#     if "/group/ovir/consumo?p_p_id" in request.url and request.method == "POST" and request.post_data:
+#         global raw_html_container
+#         url = request.url
+#         headers = {key: value for key, value in request.headers.items()}
+#         cookies = headers.get("Cookie", "")
+#         form_data = request.post_data
 
-        response = requests.post(url, data=form_data, headers=headers, cookies=cookies)
-        raw_html_container.append(response.text)
+#         response = requests.post(url, data=form_data, headers=headers, cookies=cookies)
+#         raw_html_container.append(response.text)
 
-        route.abort()
-    else:
-        route.continue_()
+#         route.abort()
+#     else:
+#         route.continue_()
 
 
 def transform(extracted_data: list[dict]) -> list[dict[str, str]]:
@@ -162,7 +196,9 @@ def transform(extracted_data: list[dict]) -> list[dict[str, str]]:
     transformed_data = []
 
     for data in extracted_data:
+        print(data)
         point = data["point"]
+        print(point)
         records = []
         for entry in data["content"]:
             c = entry["c"]
@@ -176,10 +212,11 @@ def transform(extracted_data: list[dict]) -> list[dict[str, str]]:
                 date_str = currDate + " " + date_str[:-1]
 
             date_time = _convert_to_madrid_time(date_str)
+            print(date_time)
             records.append({"end": date_time, "value": value, "duration": DURATION, "name": NAME, "unit": UNIT})
-
-        transformed_data.append(
-            [{"point": point, "timezone": TIME_ZONE, "parser": PARSER, "group": GROUP, "series": records}]
+        print("recore::",records)
+        transformed_data.append( 
+            [{"point": point, "timezone": TIME_ZONE, "parser": PARSER, "group": GROUP, "series": records}] # [[{'point': 'P21UF540326Q', 'timezone': 'Europe/Madrid', 'parser': 'Canal de Isabel', 'group': 'sum', 'series': []}]]
         )
 
     return transformed_data
@@ -188,6 +225,8 @@ def transform(extracted_data: list[dict]) -> list[dict[str, str]]:
 def extract(start_date: str, end_date: str) -> list[dict[str, Any]]:
     # he_parsers = get_secret("airflow/variables/he_parsers")
     # creds = json.loads(he_parsers["CREDENTIALS_ES_CANAL_DE_ISABEL"])
+    start_date = "2024-10-25"  
+    end_date = "2024-12-23" 
     creds = [{"username": "Y4191133H", "password": "Limehome2023!"}]
 
     print(f"Start date: {start_date}")
