@@ -109,12 +109,22 @@ def extract_data(
 
         # Click the label using 'for' attribute
         label = page.locator('label[for="contract-1"]').first
-        print(label)
+        # print(label)
         label.click()
 
-        button = page.locator('button[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_selectContractCabecera"]')
-        # button.wait_for(state='visible', timeout=60000)
-        button.click()
+        button = page.locator('button', has_text="Asocia un nuevo contrato").nth(1)
+
+        # Ensure the button is visible and clickable
+        button.wait_for(state="visible", timeout=60000)  # 60 seconds timeout
+        button.scroll_into_view_if_needed()  # Scroll into view if needed
+        button.click()  # Click the button
+
+        print("Button clicked successfully!")
+
+
+        # button = page.locator('div[class="contract-btn w-100 text-center"]').first
+        # button.wait_for(state='visible', timeout=12000)
+        # button.click()
         print("Value entered successfully...")
 
         page.goto("https://oficinavirtual.canaldeisabelsegunda.es/group/ovir/consumo",timeout=120000)
