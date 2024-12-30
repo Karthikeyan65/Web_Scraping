@@ -55,7 +55,7 @@ def extract_data(
         context = browser.new_context()
         page = context.new_page()
 
-        page.goto(f"{BASE_URL}")
+        page.goto(f"{BASE_URL}", timeout=120000)
         page.wait_for_load_state("networkidle")
         try:
             accept_button = page.locator('button[id="CybotCookiebotDialogBodyButtonDecline"]')
@@ -88,44 +88,44 @@ def extract_data(
 
         # Associate new contract
 
-        page.goto(f"{BASE_URL}/group/ovir/consumo", timeout=60000)
+        # page.goto(f"{BASE_URL}/group/ovir/consumo", timeout=60000)
 
-        dropdown = page.locator('button[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_dropdownHeaderContract"]')
-        dropdown.wait_for(state='visible', timeout=60000)
-        dropdown.click()
+        # dropdown = page.locator('button[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_dropdownHeaderContract"]')
+        # dropdown.wait_for(state='visible', timeout=60000)
+        # dropdown.click()
 
-        page.wait_for_selector('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', timeout=60000)
-        page.fill('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', "405574275")
+        # page.wait_for_selector('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', timeout=60000)
+        # page.fill('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', "405574275")
 
-        page.press('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', 'Enter')
+        # page.press('input[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_buscador-contratos"]', 'Enter')
 
-        # label = page.locator('div[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_listadoContratosGA"]').nth(0)  
-        # # label.wait_for(state='visible', timeout=60000)
-        # print("find it...")
-        # label.click()
+        # # label = page.locator('div[id="_ovirwflistadocontratosmodule_INSTANCE_listadoContratoscab_listadoContratosGA"]').nth(0)  
+        # # # label.wait_for(state='visible', timeout=60000)
+        # # print("find it...")
+        # # label.click()
         
-        # Wait for the label element with specific 'for' attribute
-        page.wait_for_selector('label[for="contract-1"]', timeout=60000)
+        # # Wait for the label element with specific 'for' attribute
+        # page.wait_for_selector('label[for="contract-1"]', timeout=60000)
 
-        # Click the label using 'for' attribute
-        label = page.locator('label[for="contract-1"]').first
-        # print(label)
-        label.click()
+        # # Click the label using 'for' attribute
+        # label = page.locator('label[for="contract-1"]').first
+        # # print(label)
+        # label.click()
 
-        button = page.locator('button', has_text="Asocia un nuevo contrato").nth(1)
+        # button = page.locator('button', has_text="Asocia un nuevo contrato").nth(1)
 
-        # Ensure the button is visible and clickable
-        button.wait_for(state="visible", timeout=60000)  # 60 seconds timeout
-        button.scroll_into_view_if_needed()  # Scroll into view if needed
-        button.click()  # Click the button
+        # # Ensure the button is visible and clickable
+        # button.wait_for(state="visible", timeout=60000)  # 60 seconds timeout
+        # button.scroll_into_view_if_needed()  # Scroll into view if needed
+        # button.click()  # Click the button
 
-        print("Button clicked successfully!")
+        # print("Button clicked successfully!")
 
 
         # button = page.locator('div[class="contract-btn w-100 text-center"]').first
         # button.wait_for(state='visible', timeout=12000)
         # button.click()
-        print("Value entered successfully...")
+        # print("Value entered successfully...")
 
         page.goto("https://oficinavirtual.canaldeisabelsegunda.es/group/ovir/consumo",timeout=120000)
         contract_divs = page.locator('div[class="resume-content datos"]')
