@@ -1,8 +1,10 @@
 import tempfile
 import time
 from datetime import datetime
+from datetime import datetime, timedelta
 
 import openpyxl
+import calendar
 from playwright.sync_api import Page, sync_playwright
 
 months = {
@@ -81,10 +83,7 @@ def get_point(page) -> str:
 
     print("Anchor tag clicked successfully.")
 
-
-
-
-def set_dates(page, start_date: datetime, end_date: datetime) -> None:
+def set_dates(page, date, key) -> None:
     """
     Sets the start and end dates for data extraction on the given page.
 
@@ -101,6 +100,7 @@ def set_dates(page, start_date: datetime, end_date: datetime) -> None:
     # page.click("mat-button-toggle#mat-button-toggle-4")
 
     # Code Modification
+    position = 0 if key == 'start_date' else 1
 
     page.click('button[class = "ds-group ds-flex ds-justify-center ds-w-[62px] ds-min-h-[44px] ds-text-center ds-items-center md:ds-pl-xs md:ds-ml-xs md:ds-w-[40px]"]')
     print("DropDown button click successfully")
@@ -109,19 +109,77 @@ def set_dates(page, start_date: datetime, end_date: datetime) -> None:
     print("Hour Click successfully")
     
     #Start Date
-    # today_date = datetime.today().strftime('%Y-%m-%d')
-    # print(f"Today's Date: {today_date}")
+    page.locator("xpath=//span[@data-testid='icon']").nth(position).click()
+    time.sleep(3)
 
-    # page.click()
-    # page.fill('input#ui-input-14', today_date) 
-    max_date = "2024-12-30"
-    today_date = min(datetime.today(), datetime.strptime(max_date, '%Y-%m-%d')).strftime('%Y-%m-%d')
-    page.locator('input#ui-input-8').fill(today_date)
+    span_locator2 = page.locator('span.ds-icons-down').nth(position)
+    span_locator2.wait_for(state="visible")
+    span_locator2.click()
+    time.sleep(3)
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
 
+    year = date_obj.year
+    month_number = date_obj.month
+    user_date = date_obj.day
+    time.sleep(3)
+    page.locator('table.ds-calendar').wait_for(state='visible')
 
-    # entered_value = page.input_value('input#ui-input-8')
-    # entered_value.wait_for(timeout=10000)
-    # print(f"Entered Date: {entered_value}")
+    years = page.locator('table.ds-calendar td').all_text_contents()
+
+    # print("Available Years:", years)
+
+    found = False
+    for year_text in years:
+        if year_text.strip() == str(year): 
+            page.locator(f'table.ds-calendar td:text("{year_text.strip()}")').click()
+            # print(f"Clicked on year: {year_text.strip()}")
+            found = True
+            break
+
+    if not found:
+        print(f"Year {year} not found in the calendar.")
+    time.sleep(3)
+    calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(position)
+    calendar_icon.wait_for(state='visible', timeout=5000)
+    calendar_icon.click()
+
+    #important
+    time.sleep(3)
+    span_icon = page.locator('//span[contains(@class, "ds-icons-down")]').nth(1)
+    span_icon.wait_for(state='visible', timeout=5000)
+    span_icon.click()
+
+    english_month = calendar.month_name[month_number]
+    translated_month = months.get(english_month, None)
+    if translated_month:
+        # print(f"Checking for month: {english_month} ({translated_month})")
+        page.locator('table.ds-calendar').wait_for(state='visible')
+        month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
+        if month_button.count() > 0:
+            month_button.first.click()
+            print(f"Clicked on the month: {translated_month}")
+        else:
+            print(f"Month {translated_month} not found in the calendar.")
+    else:
+        print("Invalid month provided!")
+    
+
+    page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+
+    time.sleep(3)
+    date_selector = f"td[tabindex='0']:has-text('{user_date}')"
+    # print(date_selector)
+    element = page.locator(date_selector)
+    # print(element)
+    time.sleep(3)
+    # print(element.count())
+    if element.count() > 0:
+        element.click()
+        print(f"Start date {user_date} is available and selectable.")
+    else:
+         print(f"Start date {user_date} is not available.")
+    time.sleep(3)
+
 
 
     # Start date
@@ -178,7 +236,37 @@ def export_data(page: Page) -> str:
     button.click()
     print("Button clicked successfully!")
 
-    #Another Button
+    # page.evaluate(f"""() => {{
+    #     const input = document.evaluate(
+    #         "((//dialog[@class='ds-hbp-dialog'])[2]//div[@class='ds-field'])[1]//input",
+    #         document,
+    #         null,
+    #         XPathResult.FIRST_ORDERED_NODE_TYPE,
+    #         null
+    #     ).singleNodeValue;
+ 
+    #     if (input) {{
+    #         input.value = "{start_date}";
+    #     }}
+    # }}""")
+ 
+    # page.evaluate(f"""() => {{
+    #     const input = document.evaluate(
+    #         "((//dialog[@class='ds-hbp-dialog'])[2]//div[@class='ds-field'])[2]//input",
+    #         document,
+    #         null,
+    #         XPathResult.FIRST_ORDERED_NODE_TYPE,
+    #         null
+    #     ).singleNodeValue;
+ 
+    #     if (input) {{
+    #         input.value = "{end_date}";
+    #     }}
+    # }}""")
+
+    
+
+    # Another Download Button
     button2 = page.locator('button[class = "ds-button ds-tiny ds-no-arrow !ds-min-w-[130px] ds-pr-xs ds-pl"]').nth(1)
     button2.scroll_into_view_if_needed()
     button2.wait_for(state="visible", timeout=5000) 
@@ -285,7 +373,15 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
             page = context.new_page()
             login(page, username, password)
             point = get_point(page)
-            set_dates(page, start_date, end_date)
+
+            #Start date
+            key = 'start_date'
+            set_dates(page, start_date, key)
+
+            #End date
+            key = 'end_date'
+            set_dates(page, end_date, key)
+
             export_data(page)
             page.wait_for_timeout(5000)
 
