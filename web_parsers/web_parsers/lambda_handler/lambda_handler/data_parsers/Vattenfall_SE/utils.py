@@ -79,7 +79,7 @@ def get_point(page) -> str:
     page.click('label[for = "HOUR"]')
     # print("Hour Click successfully")
 
-def set_dates(page, date, key) -> None:
+def set_dates(page, date, key, start_date) -> None:
     """
     Sets the start and end dates for data extraction on the given page.
 
@@ -174,6 +174,12 @@ def set_dates(page, date, key) -> None:
         
         if year != 2025:
             page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+            time.sleep(2)
+            # page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+            # time.sleep(2)
+        else:
+            page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+            time.sleep(2)
 
         time.sleep(3)
         date_to_select = user_date
@@ -183,7 +189,7 @@ def set_dates(page, date, key) -> None:
         if selected_date.count() > 0:
             print(f"Date {date_to_select} is already selected.")
         else:
-            page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').click()
+            page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').nth(0).click()
             print(f"Date {date_to_select} selected successfully.")
         time.sleep(1)
 
@@ -201,7 +207,7 @@ def set_dates(page, date, key) -> None:
         time.sleep(1)
         date_obj = datetime.strptime(date, "%Y-%m-%d")
 
-        year = date_obj.year
+        year2 = date_obj.year
         month_number = date_obj.month
         user_date = date_obj.day
         time.sleep(1)
@@ -213,23 +219,28 @@ def set_dates(page, date, key) -> None:
 
         found = False
         for year_text in years:
-            if year_text.strip() == str(year): 
+            if year_text.strip() == str(year2): 
                 page.locator(f'table.ds-calendar td:text("{year_text.strip()}")').click()
                 print(f"Clicked on year: {year_text.strip()}")
                 found = True
                 break
 
         if not found:
-            print(f"Year {year} not found in the calendar.")
+            print(f"Year {year2} not found in the calendar.")
         time.sleep(3)
 
-        if year == 2025:
+        if year2 == 2025:
+            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(0)
+            calendar_icon.wait_for(state='visible', timeout=5000)
+            calendar_icon.click()
+            time.sleep(3)
+        elif year2 == 2025:
             calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(0)
             calendar_icon.wait_for(state='visible', timeout=5000)
             calendar_icon.click()
             time.sleep(3)
         else:
-            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(position)
+            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(1)
             calendar_icon.wait_for(state='visible', timeout=5000)
             calendar_icon.click()
             time.sleep(3)
@@ -243,15 +254,11 @@ def set_dates(page, date, key) -> None:
         translated_month = months.get(english_month, None)
 
         if translated_month:
-            # Wait until the calendar is visible
             page.locator('table.ds-calendar').wait_for(state='visible')
-
-            # Locate the translated month
             month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
             print("Button count:", month_button.count())
-            # Check if the month exists in the table
             if month_button.count() > 0:
-                if year == 2025:
+                if year2 == 2025:
                     month_class = month_button.first.get_attribute('class')
                     if 'ds-selected' in month_class:
                         print(f"The month {translated_month} is already selected.")
@@ -267,12 +274,23 @@ def set_dates(page, date, key) -> None:
             print("Invalid month provided!")
         
         if position == 1:
-            if year != 2025:
-                page.locator("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]").nth(1).click()
+            if year2 != 2025:
+                page.locator("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]").nth(0).click()
                 time.sleep(1)
+            
+            else:
+                page.locator("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]").nth(0).click()
+                time.sleep(1)
+            
+        if year2 == 2025:
+             page.locator('[data-testid="icon"]').nth(1).click()
         date_selector = f"td[tabindex='0']:has-text('{user_date}')"
         # print(date_selector)
-        element = page.locator(date_selector)
+
+        if user_date >= 25:
+             element = page.locator(date_selector).nth(1)
+        else:
+            element = page.locator(date_selector).nth(0)
         # print(element)
         time.sleep(1)
         # print(element.count())
@@ -282,6 +300,77 @@ def set_dates(page, date, key) -> None:
         else:
             print(f"Start date {user_date} is not available.")
         time.sleep(1)
+
+
+        def start(start_date, page) -> None:
+            date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+
+            year = date_obj.year
+            month_number = date_obj.month
+            user_date = date_obj.day
+            calendar_icon = page.locator("span[data-testid='icon'][class*='ds-icons-calendar-01']").nth(0)
+            if calendar_icon.is_visible():
+                calendar_icon.click()
+                # print("Clicked on the calendar icon.")
+            else:
+                print("Calendar icon not found or not visible.")
+            time.sleep(1)
+
+            span_icon = page.locator('//span[contains(@class, "ds-icons-down")]').nth(1)
+            span_icon.wait_for(state='visible', timeout=5000)
+            span_icon.click()
+            english_month = calendar.month_name[month_number]
+            translated_month = months.get(english_month, None)
+            if translated_month:
+                # print(f"Checking for month: {english_month} ({translated_month})")
+                page.locator('table.ds-calendar').wait_for(state='visible')
+                # print("Months", month)
+                month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
+                # print("month_button",month_button)
+                if month_button.count() > 0:
+                    month_button.first.click()
+                    if year == 2025:
+                        page.locator("span.ds-icons-down").nth(1).click()
+                        time.sleep(3)
+                    print(f"Clicked on the month: {translated_month}")
+                else:
+                    print(f"Month {translated_month} not found in the calendar.")
+            else:
+                print("Invalid month provided!")
+            
+            if year != 2025:
+                page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+                time.sleep(1)
+                page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
+
+            time.sleep(3)
+            date_to_select = user_date
+
+            selected_date = page.locator(f'td.ds-selected:has-text("{date_to_select}")')
+
+            if selected_date.count() > 0:
+                print(f"Date {date_to_select} is already selected.")
+            else:
+                page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').nth(0).click()
+                print(f"Date {date_to_select} selected successfully.")
+            time.sleep(1)
+
+        date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+        year = date_obj.year
+        month_number = date_obj.month
+        user_date = date_obj.day
+        if year == year2:
+            print(year)
+            print(year2)
+            start_date = start_date
+            start(start_date, page)
+        else:
+            print("Extraction....")
+
+        
+
+
+
 
 def export_data(page: Page) -> str:
     """
@@ -394,15 +483,16 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
             page = context.new_page()
             login(page, username, password)
             point = get_point(page)
-
-            #End Date
-            key = 'end_date'
-            set_dates(page, end_date, key)
+            
 
             #Start date
             key = 'start_date'
-            set_dates(page, start_date, key)
+            set_dates(page, start_date, key, start_date)
+            #End Date
+            key = 'end_date'
+            set_dates(page, end_date, key, start_date)
 
+            
 
             export_data(page)
             page.wait_for_timeout(5000)

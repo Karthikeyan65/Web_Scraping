@@ -19,26 +19,13 @@ def run(event: dict[str, Any], context: Any) -> None:
 
 
 def extract_data(event: dict[str, Any]):
-
-    if "start_date" in event and event["start_date"] and "end_date" in event and event["end_date"]:
-        start_date = event.get("start_date")
-        end_date = event.get("end_date")
-
-        try:
-            datetime.strptime(start_date, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError(f"Invalid date format for 'start_date'. Expected 'YYYY-MM-DD', got '{start_date}'.")
-
-        try:
-            datetime.strptime(end_date, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError(f"Invalid date format for 'end_date'. Expected 'YYYY-MM-DD', got '{end_date}'.")
-    else:
-        today = datetime.now()
-        first_day_of_current_month = today.replace(day=1)
-        last_day_of_previous_month = first_day_of_current_month - timedelta(days=1)
-        start_date = last_day_of_previous_month.replace(day=1).strftime("%Y-%m-%d")
-        end_date = last_day_of_previous_month.strftime("%Y-%m-%d")
+    try:
+        if "start_date" in event and event["start_date"] and "end_date" in event and event["end_date"]:
+                start_date = event["start_date"]
+                end_date = event["end_date"]
+        else:
+            start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+            end_date = start_date
 
         
 
@@ -82,6 +69,8 @@ def extract_data(event: dict[str, Any]):
             return all_extracted_data
         else:
             raise ValueError("No data extracted for this date range")
+    except Exception as e:
+        print(f"Extract process error: {e}")
 
 
 
