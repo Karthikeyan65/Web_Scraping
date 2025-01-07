@@ -79,7 +79,7 @@ def get_point(page) -> str:
     page.click('label[for = "HOUR"]')
     # print("Hour Click successfully")
 
-def set_dates(page, date, key, start_date) -> None:
+def set_dates(page, date, key) -> None:
     """
     Sets the start and end dates for data extraction on the given page.
 
@@ -94,278 +94,69 @@ def set_dates(page, date, key, start_date) -> None:
 
     position = 0 if key == 'start_date' else 1
 
-    #Start Date
+    # Start Date
     if position == 0:
-        page.locator("xpath=//span[@data-testid='icon']").nth(position).click()
-        time.sleep(1)
-        input = True
-        if(input):
-            button_selector = "button.ds-icons-left"  
-            page.locator(button_selector).click()
-            input = False
+        page.click("span[data-testid='icon']")
+        page.click("span.ds-icons-down")
 
-        span_locator2 = page.locator('span.ds-icons-down').nth(position)
-        span_locator2.wait_for(state="visible")
-        span_locator2.click()
-        time.sleep(1)
-
-        
         date_obj = datetime.strptime(date, "%Y-%m-%d")
         year = date_obj.year
-        month_number = date_obj.month
-        user_date = date_obj.day
         time.sleep(1)
+        page.click(f"td:has-text('{year}')")
 
-        page.locator('table.ds-calendar').wait_for(state='visible')
+    else:
+    # End Date
+        page.locator("span[data-testid='icon']").nth(1).click()
+        time.sleep(1)
+        page.click("span.ds-icons-down")
+        time.sleep(1)
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+        year1 = date_obj.year
 
-        years = page.locator('table.ds-calendar td').all_text_contents()
-        check_years = page.locator("td[tabindex='0']").all_inner_texts()
-
-        # Logic to handle the 'ds-disabled' class
-        disabled_years = page.locator("td.ds-disabled").all_inner_texts()
-
-        # Logic to handle the 'ds-selected' class
-        selected_years = page.locator("td.ds-selected").all_inner_texts()
-
-        if str(year) in disabled_years:
-            print(f"Year {year} is disabled. Cannot select it.")
-        elif str(year) in selected_years:
-            print(f"Year {year} is already selected.")
-            page.locator("span.ds-icons-down").nth(1).click()
-            time.sleep(1)
-
-        elif str(year) in check_years:
-            print(f"Year {year} is present but not selected. Clicking to select it.")
-            page.locator(f"td[tabindex='0']:has-text('{year}')").click()
-
-            calendar_icon = page.locator("span[data-testid='icon'][class*='ds-icons-calendar-01']").nth(0)
-            if calendar_icon.is_visible():
-                calendar_icon.click()
-                # print("Clicked on the calendar icon.")
-            else:
-                print("Calendar icon not found or not visible.")
-            time.sleep(1)
-
-            span_icon = page.locator('//span[contains(@class, "ds-icons-down")]').nth(1)
-            span_icon.wait_for(state='visible', timeout=5000)
-            span_icon.click()
+        if year1 <= 2024:
+            year = date_obj.year
+            month_number = 12
+            user_date = 31
         else:
-            print(f"Year {year} not found. Performing alternative action.")
-
-
+            current_date = datetime.now()
+            year = current_date.year
+            month_number = current_date.month
+            user_date = current_date.day
+            
+        selector = f"td:has-text('{year}'):not(.ds-disabled)"  
+        page.click(selector)
+        time.sleep(1)
+        page.locator("span[data-testid='icon']").nth(1).click()
+        time.sleep(1)
+        page.locator("span.ds-icons-down").nth(1).click()
+        time.sleep(1)
         english_month = calendar.month_name[month_number]
         translated_month = months.get(english_month, None)
         if translated_month:
-            # print(f"Checking for month: {english_month} ({translated_month})")
+                # print(f"Checking for month: {english_month} ({translated_month})")
             page.locator('table.ds-calendar').wait_for(state='visible')
-            # print("Months", month)
+                # print("Months", month)
             month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
-            # print("month_button",month_button)
+                # print("month_button",month_button)
             if month_button.count() > 0:
                 month_button.first.click()
-                if year == 2025:
-                    page.locator("span.ds-icons-down").nth(1).click()
-                    time.sleep(3)
-                print(f"Clicked on the month: {translated_month}")
             else:
-                print(f"Month {translated_month} not found in the calendar.")
-        else:
-            print("Invalid month provided!")
-        
-        if year != 2025:
-            page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
-            time.sleep(2)
-            # page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
-            # time.sleep(2)
-        else:
-            page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
-            time.sleep(2)
-
-        time.sleep(3)
+                print("Invalid month provided!")
+        page.locator("span.ds-icons-calendar-01").nth(1).click()
+        if year1 >= 2025:
+            page.locator("span.ds-icons-calendar-01").nth(1).click()
         date_to_select = user_date
-
         selected_date = page.locator(f'td.ds-selected:has-text("{date_to_select}")')
-
         if selected_date.count() > 0:
             print(f"Date {date_to_select} is already selected.")
         else:
             page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').nth(0).click()
             print(f"Date {date_to_select} selected successfully.")
-        time.sleep(1)
-
-
-
-
-    # End Date
-    if position == 1:
-        page.locator("xpath=//span[@data-testid='icon']").nth(position).click()
-        time.sleep(1)
-
-        span_locator2 = page.locator('span.ds-icons-down').nth(0)
-        span_locator2.wait_for(state="visible")
-        span_locator2.click()
-        time.sleep(1)
-        date_obj = datetime.strptime(date, "%Y-%m-%d")
-
-        year2 = date_obj.year
-        month_number = date_obj.month
-        user_date = date_obj.day
-        time.sleep(1)
-        page.locator('table.ds-calendar').wait_for(state='visible')
-
-        years = page.locator('table.ds-calendar td').all_text_contents()
-
-        # print("Available Years:", years)
-
-        found = False
-        for year_text in years:
-            if year_text.strip() == str(year2): 
-                page.locator(f'table.ds-calendar td:text("{year_text.strip()}")').click()
-                print(f"Clicked on year: {year_text.strip()}")
-                found = True
-                break
-
-        if not found:
-            print(f"Year {year2} not found in the calendar.")
         time.sleep(3)
 
-        if year2 == 2025:
-            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(0)
-            calendar_icon.wait_for(state='visible', timeout=5000)
-            calendar_icon.click()
-            time.sleep(3)
-        elif year2 == 2025:
-            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(0)
-            calendar_icon.wait_for(state='visible', timeout=5000)
-            calendar_icon.click()
-            time.sleep(3)
-        else:
-            calendar_icon = page.locator('//span[@data-testid="icon" and contains(@class, "ds-icons-calendar-01")]').nth(1)
-            calendar_icon.wait_for(state='visible', timeout=5000)
-            calendar_icon.click()
-            time.sleep(3)
-
-        span_icon = page.locator('//span[contains(@class, "ds-icons-down")]').nth(1)
-        span_icon.wait_for(state='visible', timeout=5000)
-        span_icon.click()
-        time.sleep(1)
-
-        english_month = calendar.month_name[month_number]
-        translated_month = months.get(english_month, None)
-
-        if translated_month:
-            page.locator('table.ds-calendar').wait_for(state='visible')
-            month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
-            print("Button count:", month_button.count())
-            if month_button.count() > 0:
-                if year2 == 2025:
-                    month_class = month_button.first.get_attribute('class')
-                    if 'ds-selected' in month_class:
-                        print(f"The month {translated_month} is already selected.")
-                        page.locator("span.ds-icons-down").nth(1).click()
-                    elif 'ds-disabled' in month_class:
-                        print(f"The month {translated_month} is disabled and cannot be clicked.")
-                else:
-                    month_button.first.click()
-                    print(f"Clicked on the month: {translated_month}")  
-            else:
-                print(f"Month {translated_month} not found in the calendar.")
-        else:
-            print("Invalid month provided!")
-        
-        if position == 1:
-            if year2 != 2025:
-                page.locator("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]").nth(0).click()
-                time.sleep(1)
-            
-            else:
-                page.locator("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]").nth(0).click()
-                time.sleep(1)
-            
-        if year2 == 2025:
-             page.locator('[data-testid="icon"]').nth(1).click()
-        date_selector = f"td[tabindex='0']:has-text('{user_date}')"
-        # print(date_selector)
-
-        if user_date >= 25:
-             element = page.locator(date_selector).nth(1)
-        else:
-            element = page.locator(date_selector).nth(0)
-        # print(element)
-        time.sleep(1)
-        # print(element.count())
-        if element.count() > 0:
-            element.click()
-            # print(f"Start date {user_date} is available and selectable.")
-        else:
-            print(f"Start date {user_date} is not available.")
-        time.sleep(1)
 
 
-        def start(start_date, page) -> None:
-            date_obj = datetime.strptime(start_date, "%Y-%m-%d")
 
-            year = date_obj.year
-            month_number = date_obj.month
-            user_date = date_obj.day
-            calendar_icon = page.locator("span[data-testid='icon'][class*='ds-icons-calendar-01']").nth(0)
-            if calendar_icon.is_visible():
-                calendar_icon.click()
-                # print("Clicked on the calendar icon.")
-            else:
-                print("Calendar icon not found or not visible.")
-            time.sleep(1)
-
-            span_icon = page.locator('//span[contains(@class, "ds-icons-down")]').nth(1)
-            span_icon.wait_for(state='visible', timeout=5000)
-            span_icon.click()
-            english_month = calendar.month_name[month_number]
-            translated_month = months.get(english_month, None)
-            if translated_month:
-                # print(f"Checking for month: {english_month} ({translated_month})")
-                page.locator('table.ds-calendar').wait_for(state='visible')
-                # print("Months", month)
-                month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
-                # print("month_button",month_button)
-                if month_button.count() > 0:
-                    month_button.first.click()
-                    if year == 2025:
-                        page.locator("span.ds-icons-down").nth(1).click()
-                        time.sleep(3)
-                    print(f"Clicked on the month: {translated_month}")
-                else:
-                    print(f"Month {translated_month} not found in the calendar.")
-            else:
-                print("Invalid month provided!")
-            
-            if year != 2025:
-                page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
-                time.sleep(1)
-                page.click("//span[@data-testid='icon' and contains(@class, 'ds-icons-calendar-01')]")
-
-            time.sleep(3)
-            date_to_select = user_date
-
-            selected_date = page.locator(f'td.ds-selected:has-text("{date_to_select}")')
-
-            if selected_date.count() > 0:
-                print(f"Date {date_to_select} is already selected.")
-            else:
-                page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').nth(0).click()
-                print(f"Date {date_to_select} selected successfully.")
-            time.sleep(1)
-
-        date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-        year = date_obj.year
-        month_number = date_obj.month
-        user_date = date_obj.day
-        if year == year2:
-            print(year)
-            print(year2)
-            start_date = start_date
-            start(start_date, page)
-        else:
-            print("Extraction....")
 
         
 
@@ -394,6 +185,7 @@ def export_data(page: Page) -> str:
     button2.wait_for(state="visible", timeout=5000) 
     button2.click()
     print("successfully click")
+    time.sleep(1)
 
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -411,42 +203,67 @@ def export_data(page: Page) -> str:
         return download_path
 
 
-def read_file_and_transform(path: str, point: str) -> list[dict]:
+def read_file_and_transform(path: str, point: str, start_date: str, end_date: str) -> list[dict]:
     """
     Reads an Excel file and transforms the data into a structured format.
 
     Parameters:
     path (str): The file path to the Excel file.
     point (str): The point value to be included in the transformed data.
+    start_date (str): Start date for filtering data (format: YYYY-MM-DD).
+    end_date (str): End date for filtering data (format: YYYY-MM-DD).
 
     Returns:
     list[dict]: A list of dictionaries containing the transformed data.
     """
+
     print("Starting transformation process...")
+    
+    # Validate the date range
+    current_date = datetime.now().date()
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    if end_dt > current_date:
+        return {'error': "Invalid year. Dates cannot be in the future."}
+
     wb = openpyxl.load_workbook(path)
     ws = wb[wb.sheetnames[0]]
+
     row_data = []
     data = []
     series = []
+
     for cells in ws.iter_rows():
         row_data.append([str(cell.value) if isinstance(cell.value, datetime) else cell.value for cell in cells])
+
+    # Filter rows with valid data
     filtered_row_data = [row for row in row_data[2:] if any(cell is not None for cell in row)]
     if not filtered_row_data:
-        return {'error':"No data found in this date"}
+        return {'error': "No data found in this date"}
+
     for val in filtered_row_data:
         if val[0] and val[1] is not None:
+            # Parse the date and time in the correct format
             dt = datetime.strptime(str(val[5]), "%Y-%m-%d %H:%M:%S")
-            value = float(val[6]) * 3600
-            formatted_value = round(value, 2)
-        series.append(
-            {
-                "duration": "1H",
-                "end": f"{dt.isoformat()}+01:00",
-                "value": formatted_value,
-                "name": "thermal energy",
-                "unit": "MJ",
-            }
-        )
+
+            # Filter based on the date range
+            if start_dt <= dt.date() <= end_dt:
+                value = float(val[6]) * 3600
+                formatted_value = round(value, 2)
+                series.append(
+                    {
+                        "duration": "1H",
+                        "end": f"{dt.isoformat()}+01:00",
+                        "value": formatted_value,
+                        "name": "thermal energy",
+                        "unit": "MJ",
+                    }
+                )
+
+    if not series:
+        return {'error': "No data extracted for this date range"}
+
     data.append(
         {
             "point": point,
@@ -458,6 +275,7 @@ def read_file_and_transform(path: str, point: str) -> list[dict]:
     )
     print("Transformation process completed.")
     return data
+
 
 
 def extract(username: str, password: str, start_date: datetime, end_date: datetime) -> list[dict]:
@@ -478,7 +296,7 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
     print("Starting extraction process...")
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False, args=["--disable-gpu", "--single-process", "--incognito"])
+            browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--single-process", "--incognito"])
             context = browser.new_context()
             page = context.new_page()
             login(page, username, password)
@@ -487,10 +305,10 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
 
             #Start date
             key = 'start_date'
-            set_dates(page, start_date, key, start_date)
+            set_dates(page, start_date, key)
             #End Date
             key = 'end_date'
-            set_dates(page, end_date, key, start_date)
+            set_dates(page, end_date, key)
 
             
 
@@ -499,7 +317,7 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
 
             browser.close()
 
-        data = read_file_and_transform(path, point)
+        data = read_file_and_transform(path, point, start_date, end_date)
         if "error" in data:
             return data
         print(f"Successfully extracted the values.")

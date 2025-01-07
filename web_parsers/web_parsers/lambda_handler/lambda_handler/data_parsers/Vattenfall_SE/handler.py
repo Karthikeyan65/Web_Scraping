@@ -23,6 +23,15 @@ def extract_data(event: dict[str, Any]):
         if "start_date" in event and event["start_date"] and "end_date" in event and event["end_date"]:
                 start_date = event["start_date"]
                 end_date = event["end_date"]
+                date = datetime.strptime(start_date, "%Y-%m-%d")
+                year = date.year
+
+                current_date = datetime.now()
+                year1 = current_date.year
+                if year > year1:
+                    print("Start date year should be small or equal to the End date year...")
+                    return
+
         else:
             start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
             end_date = start_date
