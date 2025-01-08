@@ -33,8 +33,8 @@ def extract_data(event: dict[str, Any]):
                     return
 
         else:
-            start_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
-            end_date = start_date
+            start_date = (datetime.now() - timedelta(days=9)).strftime("%Y-%m-%d")
+            end_date = (datetime.now() - timedelta(days=0)).strftime("%Y-%m-%d")
 
         
 

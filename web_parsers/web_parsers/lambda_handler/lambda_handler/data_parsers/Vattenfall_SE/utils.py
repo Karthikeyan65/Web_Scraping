@@ -71,13 +71,18 @@ def get_point(page) -> str:
     locator.scroll_into_view_if_needed()
     locator.click(force=True)
 
-    # print("Anchor tag clicked successfully.")
+    icon = page.locator('i.ds-icons-down.ds-w-\\[22px\\].ds-h-\\[22px\\]').nth(0)
+    icon.click()
+
+    span_element = page.locator('span.ds-block.ds-text-sm.ds-pt-2xs')
+    result = span_element.text_content()
+    point = ''.join(filter(str.isdigit, result))
+    
 
     page.click('button[class = "ds-group ds-flex ds-justify-center ds-w-[62px] ds-min-h-[44px] ds-text-center ds-items-center md:ds-pl-xs md:ds-ml-xs md:ds-w-[40px]"]')
-    # print("DropDown button click successfully")
 
     page.click('label[for = "HOUR"]')
-    # print("Hour Click successfully")
+    return point
 
 def set_dates(page, date, key) -> None:
     """
@@ -133,11 +138,8 @@ def set_dates(page, date, key) -> None:
         english_month = calendar.month_name[month_number]
         translated_month = months.get(english_month, None)
         if translated_month:
-                # print(f"Checking for month: {english_month} ({translated_month})")
             page.locator('table.ds-calendar').wait_for(state='visible')
-                # print("Months", month)
             month_button = page.locator(f"//td[contains(text(), '{translated_month}')]")
-                # print("month_button",month_button)
             if month_button.count() > 0:
                 month_button.first.click()
             else:
@@ -151,7 +153,6 @@ def set_dates(page, date, key) -> None:
             print(f"Date {date_to_select} is already selected.")
         else:
             page.locator(f'td:not(.ds-disabled):has-text("{date_to_select}")').nth(0).click()
-            print(f"Date {date_to_select} selected successfully.")
         time.sleep(3)
 
 
@@ -184,7 +185,6 @@ def export_data(page: Page) -> str:
     button2.scroll_into_view_if_needed()
     button2.wait_for(state="visible", timeout=5000) 
     button2.click()
-    print("successfully click")
     time.sleep(1)
 
 
@@ -237,17 +237,14 @@ def read_file_and_transform(path: str, point: str, start_date: str, end_date: st
     for cells in ws.iter_rows():
         row_data.append([str(cell.value) if isinstance(cell.value, datetime) else cell.value for cell in cells])
 
-    # Filter rows with valid data
     filtered_row_data = [row for row in row_data[2:] if any(cell is not None for cell in row)]
     if not filtered_row_data:
         return {'error': "No data found in this date"}
 
     for val in filtered_row_data:
         if val[0] and val[1] is not None:
-            # Parse the date and time in the correct format
             dt = datetime.strptime(str(val[5]), "%Y-%m-%d %H:%M:%S")
 
-            # Filter based on the date range
             if start_dt <= dt.date() <= end_dt:
                 value = float(val[6]) * 3600
                 formatted_value = round(value, 2)
@@ -296,7 +293,7 @@ def extract(username: str, password: str, start_date: datetime, end_date: dateti
     print("Starting extraction process...")
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--single-process", "--incognito"])
+            browser = p.chromium.launch(headless=False, args=["--disable-gpu", "--single-process", "--incognito"])
             context = browser.new_context()
             page = context.new_page()
             login(page, username, password)
